@@ -51,7 +51,7 @@ def query(event, context=None):
 
     logger.debug('Passed this_config with added defaults: %s', this_config)
 
-    credentials = client.et_cluster_credentials(
+    credentials = client.get_cluster_credentials(
         DbUser=this_config['db_user'],
         DbName=this_config['db_name'],
         ClusterIdentifier=this_config['cluster_id'],
@@ -60,14 +60,12 @@ def query(event, context=None):
 
     logger.debug('Received Credentials')
 
-    db = pg.DB(
-        host=this_config['cluster_host'],
-        port=5439,
-        dbname=this_config['db_name'],
-        user=credentials['DbUser'],
-        passwd=credentials['DbPassword'],
-        opt='keepalives=1 keepalives_idle=200 keepalives_interval=200 keepalives_count=6 connect_timeout=10'
-    )
+    db = pg.DB(f"host={this_config['cluster_host']} "
+                      f"dbname={this_config['db_name']} "
+                      f"user={credentials['DbUser']} "
+                      f"password={credentials['DbPassword']} "
+                      'port=5439 '
+                      'keepalives=1 keepalives_idle=200 keepalives_interval=200 keepalives_count=6 connect_timeout=10')
 
     logger.debug('Connected')
 
