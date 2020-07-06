@@ -19,4 +19,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    install_requires=[
+        'pygresql~=5.2',
+        'boto3~=1.13.6'
+    ]
 )
