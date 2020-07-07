@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="redshift-query", # Replace with your own username
-    version="0.0.1",
+    version="0.0.3",
     author="Farid Nouri Neshat",
     author_email="faridn@helecloud.com",
     description="A simple library that runs queries on redshift!",

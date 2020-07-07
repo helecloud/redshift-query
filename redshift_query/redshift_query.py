@@ -33,8 +33,8 @@ config = {
     'sql_statements': os.getenv('SQL_STATEMENTS'),
 }
 
-logger = logging.getLogger()
-logger.setLevel(os.getenv('LOG_LEVEL', 'ERROR'))
+logger = logging.getLogger('redshift_query')
+logger.setLevel(os.getenv('REDSHIFT_QUERY_LOG_LEVEL', 'ERROR'))
 
 
 def set_config(new_config):
