@@ -46,13 +46,14 @@ def set_config(new_config):
 def query(event, context=None):
     logger.debug('Passed Event: %s', event)
 
-    session = config['boto_session'] or boto3.session.Session()
+    this_config = {**config, **event}
+
+    session = this_config['boto_session'] or boto3.session.Session()
+
     if not isinstance(session, boto3.session.Session):
         raise RuntimeError('Not a valid boto3 session. Please check your configuration')
 
     client = session.client('redshift')
-
-    this_config = {**config, **event}
 
     logger.debug('Passed this_config with added defaults: %s', this_config)
 

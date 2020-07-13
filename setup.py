@@ -1,26 +1,53 @@
-import setuptools
+#!/usr/bin/env python
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+"""The setup script."""
 
-setuptools.setup(
-    name="redshift-query", # Replace with your own username
-    version="0.0.3",
+from setuptools import setup, find_packages
+
+with open('README.md') as readme_file:
+    readme = readme_file.read()
+
+requirements = [
+    'pygresql~=5.2',
+    'boto3~=1.14.17'
+]
+
+setup_requirements = [ ]
+
+test_requirements = [ ]
+
+setup(
     author="Farid Nouri Neshat",
-    author_email="faridn@helecloud.com",
-    description="A simple library that runs queries on redshift!",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/helecloud/redshift_query",
-    packages=setuptools.find_packages(),
+    author_email='faridn@helecloud.com',
+    python_requires='>=3.5',
     classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        'Development Status :: 2 - Pre-Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
-    python_requires='>=3.6',
-    install_requires=[
-        'pygresql~=5.2',
-        'boto3~=1.13.6'
-    ]
+    description="A simple library that runs queries on redshift!",
+    entry_points={
+        'console_scripts': [
+            'redshift_query=redshift_query.cli:main',
+        ],
+    },
+    install_requires=requirements,
+    license="MIT license",
+    long_description=readme,
+    include_package_data=True,
+    keywords='redshift_query',
+    name='redshift_query',
+    packages=find_packages(include=['redshift_query', 'redshift_query.*']),
+    setup_requires=setup_requirements,
+    test_suite='tests',
+    tests_require=test_requirements,
+    url='https://github.com/helecloud/redshift_query',
+    version='0.0.3',
+    zip_safe=False,
 )

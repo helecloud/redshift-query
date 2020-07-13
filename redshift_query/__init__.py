@@ -1,1 +1,5 @@
-from .redshift_query import set_config, query
+"""Top-level package for redshift-query."""
+
+__author__ = """Farid Nouri Neshat"""
+__email__ = 'faridn@helecloud.com'
+__version__ = '0.0.3'
