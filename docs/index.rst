@@ -7,7 +7,6 @@ Welcome to redshift-query's documentation!
 
    readme
    installation
-   usage
    modules
    contributing
    history
