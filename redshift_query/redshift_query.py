@@ -31,6 +31,7 @@ config = {
     'cluster_host': os.getenv('CLUSTER_HOST'),
     'cluster_id': os.getenv('CLUSTER_ID'),
     'sql_statements': os.getenv('SQL_STATEMENTS'),
+    'boto_session': None
 }
 
 logger = logging.getLogger('redshift_query')
@@ -45,7 +46,11 @@ def set_config(new_config):
 def query(event, context=None):
     logger.debug('Passed Event: %s', event)
 
-    client = boto3.client('redshift')
+    session = config['boto_session'] or boto3.session.Session()
+    if not isinstance(session, boto3.session.Session):
+        raise RuntimeError('Not a valid boto3 session. Please check your configuration')
+
+    client = session.client('redshift')
 
     this_config = {**config, **event}
 
