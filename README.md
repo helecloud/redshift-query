@@ -1,13 +1,21 @@
-# redshift_query
+# redshift-query
+
+![image](https://img.shields.io/pypi/v/redshift_query.svg%0A%20%20%20%20%20:target:%20https://pypi.python.org/pypi/redshift_query)
+
+![image](https://img.shields.io/travis/helecloud/redshift_query.svg%0A%20%20%20%20%20:target:%20https://travis-ci.com/helecloud/redshift_query)
+
+![image](https://readthedocs.org/projects/redshift-query/badge/?version=latest%0A%20%20%20%20%20:target:%20https://redshift-query.readthedocs.io/en/latest/?badge=latest%0A%20%20%20%20%20:alt:%20Documentation%20Status)
+
+![image](https://pyup.io/repos/github/helecloud/redshift_query/shield.svg%0A%20%20:target:%20https://pyup.io/repos/github/helecloud/redshift_query/%0A%20%20:alt:%20Updates)
 
 This is a very simple library that gets credentials of a cluster via
 [redshift.GetClusterCredentials](https://docs.aws.amazon.com/redshift/latest/APIReference/API_GetClusterCredentials.html)
-API call and then makes a connection to the cluster and runs the provided SQL statements, once done it will close the 
- connection and return the results. 
+API call and then makes a connection to the cluster and runs the provided SQL statements, once done it will close the
+ connection and return the results.
 
 This is useful for when you want to run queries in CLIs or based on events for example on AWS Lambdas, or on a regular
  basis on AWS Glue Python Shell jobs.
- 
+
 ## Usage
 
 While redshift_query could be used as a library it or it's own standalone script.
@@ -76,7 +84,7 @@ Resources:
 
 ### Usage as a Library
 
-To use the library directly 
+To use the library directly you can simply provide the parameters in snake_case format:
 ```python
 import redshift_query
 
@@ -87,7 +95,7 @@ results = redshift_query.query({
     'cluster_id': 'test',
     'sql_statements': '''
         copy customer
-            from 's3://mybucket/cust.manifest' 
+            from 's3://mybucket/cust.manifest'
             iam_role 'arn:aws:iam::0123456789012:role/MyRedshiftRole'
             manifest;
         select * from customer;
@@ -114,10 +122,30 @@ redshift_query.set_config({
 redshift_query.query({
     'sql_statements': '''
         copy customer
-            from 's3://mybucket/cust.manifest' 
+            from 's3://mybucket/cust.manifest'
             iam_role 'arn:aws:iam::0123456789012:role/MyRedshiftRole'
             manifest;
      '''
 })
 ```
 
+Optionally you can also provide boto_session, if you want to assume role or provide your own credentials:
+
+```python
+import redshift_query
+import boto3
+
+redshift_query.query({
+    'boto_session': boto3.session.Session(profile_name='production'),
+    'sql_statements': 'select 1;'
+})
+```
+
+
+Credits
+-------
+
+This package was created with
+[Cookiecutter](https://github.com/audreyr/cookiecutter) and the
+[audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage)
+project template.
