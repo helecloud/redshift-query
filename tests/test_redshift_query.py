@@ -2,13 +2,16 @@
 
 """Tests for `redshift_query` package."""
 
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import patch, call
 import unittest
 import boto3
 import botocore.session
 import pg
 from botocore.stub import Stubber
 from redshift_query import redshift_query
+import logging
+
+logging.basicConfig()
 
 
 class MockBoto(boto3.session.Session):
@@ -28,6 +31,8 @@ class MockBoto(boto3.session.Session):
         stubber.activate()
 
         return redshift
+
+
 class TestRedshiftQuery(unittest.TestCase):
     """Tests for `redshift_query` package."""
 
@@ -39,6 +44,7 @@ class TestRedshiftQuery(unittest.TestCase):
 
     def test_query(self):
         with patch.object(pg, 'DB') as mock_method:
+            mock_method().query.return_value = 'test'
             results = redshift_query.query({
                 'db_name': 'name',
                 'db_user': 'user',
@@ -55,7 +61,10 @@ class TestRedshiftQuery(unittest.TestCase):
 
         mock_method.assert_has_calls([
             call("host=host dbname=name user=user password=password port=5439 keepalives=1 "
-                 "keepalives_idle=200 keepalives_interval=200 keepalives_count=6 connect_timeout=10"),
+                 "keepalives_idle=200 keepalives_interval=200 keepalives_count=6 "
+                 "connect_timeout=10"),
             call().query('select 1'),
             call().close()
         ], any_order=True)
+
+        self.assertEqual(results, ['test'])

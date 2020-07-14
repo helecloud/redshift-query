@@ -67,11 +67,12 @@ def query(event, context=None):
     logger.debug('Received Credentials')
 
     db = pg.DB(f"host={this_config['cluster_host']} "
-                      f"dbname={this_config['db_name']} "
-                      f"user={credentials['DbUser']} "
-                      f"password={credentials['DbPassword']} "
-                      'port=5439 '
-                      'keepalives=1 keepalives_idle=200 keepalives_interval=200 keepalives_count=6 connect_timeout=10')
+               f"dbname={this_config['db_name']} "
+               f"user={credentials['DbUser']} "
+               f"password={credentials['DbPassword']} "
+               'port=5439 '
+               'keepalives=1 keepalives_idle=200 keepalives_interval=200 keepalives_count=6 '
+               'connect_timeout=10')
 
     logger.debug('Connected')
 
