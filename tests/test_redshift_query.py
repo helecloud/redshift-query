@@ -20,7 +20,7 @@ class MockBoto(boto3.session.Session):
         self.expected_params = expected_params
 
     def client(self, name: str, **kwargs):
-        redshift = botocore.session.get_session().create_client('redshift')
+        redshift = botocore.session.get_session().create_client('redshift', region_name='us-east-1')
         stubber = Stubber(redshift)
 
         stubber.add_response('get_cluster_credentials', {
