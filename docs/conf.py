@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 import redshift_query
 
-# -- General configuration ---------------------------------------------
+# -- General cogtnfiguration ---------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
@@ -31,7 +31,7 @@ import redshift_query
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'm2r']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

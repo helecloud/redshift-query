@@ -8,13 +8,14 @@
 
 ![image](https://pyup.io/repos/github/helecloud/redshift_query/shield.svg%0A%20%20:target:%20https://pyup.io/repos/github/helecloud/redshift_query/%0A%20%20:alt:%20Updates)
 
+## Introduction
+
 This is a very simple library that gets credentials of a cluster via
 [redshift.GetClusterCredentials](https://docs.aws.amazon.com/redshift/latest/APIReference/API_GetClusterCredentials.html)
-API call and then makes a connection to the cluster and runs the provided SQL statements, once done it will close the
- connection and return the results.
+API call and then makes a connection to the cluster and runs the provided SQL statements, once done it will close the connection and return the results.
 
 This is useful for when you want to run queries in CLIs or based on events for example on AWS Lambdas, or on a regular
- basis on AWS Glue Python Shell jobs.
+basis on AWS Glue Python Shell jobs.
 
 ## Usage
 
@@ -27,9 +28,9 @@ It requires the following parameters supplied either as environmental variables 
 - CLUSTER_HOST: The host name of the redshift cluster. You can optionally provide this via cluster_host parameter to the function.
 - CLUSTER_ID: The id of the cluster. You can optionally provide this via cluster_id parameter to the function.
 - SQL_STATEMENTS: The SQL statements to run. You can optionally provide this via sql_statements parameter to the function.
-    This parameter is going to be formatted(via [string.format](https://docs.python.org/3/library/string.html)) with the event object that is passed to it.
-    This way you can have the SQL statement to be based of the event that's passed to your function, which is useful
-    for when you have a Lambda and it is called by an event source(S3 for example).
+This parameter is going to be formatted(via [string.format](https://docs.python.org/3/library/string.html)) with the event object that is passed to it.
+This way you can have the SQL statement to be based of the event that's passed to your function, which is useful
+for when you have a Lambda and it is called by an event source(S3 for example).
 - REDSHIFT_QUERY_LOG_LEVEL: By default set to ERROR, which logs nothing. Normally errors are not logged and bubbled up instead so they crash the script.
 If set to INFO, it will log the result of queries and if set to DEBUG it will log every thing that happens which is good for debugging why it is stuck.
 
