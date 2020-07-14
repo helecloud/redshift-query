@@ -19,7 +19,7 @@ test_requirements = [ ]
 setup(
     author="Farid Nouri Neshat",
     author_email='faridn@helecloud.com',
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
