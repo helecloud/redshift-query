@@ -12,7 +12,7 @@ To install redshift-query, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install redshift_query
+    $ pip install redshift-query
 
 This is the preferred method to install redshift-query, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/helecloud/redshift_query
+    $ git clone git://github.com/helecloud/redshift-query
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/helecloud/redshift_query/tarball/master
+    $ curl -OJL https://github.com/helecloud/redshift-query/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/helecloud/redshift_query
-.. _tarball: https://github.com/helecloud/redshift_query/tarball/master
+.. _Github repo: https://github.com/helecloud/redshift-query
+.. _tarball: https://github.com/helecloud/redshift-query/tarball/master
