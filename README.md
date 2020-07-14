@@ -142,6 +142,20 @@ redshift_query.query({
 })
 ```
 
+### As a CLI
+
+```
+$ DB_USER=neshat DB_NAME=test CLUSTER_ID=test CLUSTER_HOST=test.3j232jjqji21.eu-west-1.redshift.amazonaws.com SQL_STATEMENTS='select 1;' REDSHIFT_QUERY_LOG_LEVEL=DEBUG redshift_query
+DEBUG:redshift_query:Passed Event: {}
+DEBUG:redshift_query:Passed this_config with added defaults: {'db_name': 'test', 'db_user': 'neshat', 'cluster_host': 'test.3j232jjqji21.eu-west-1.redshift.amazonaws.com', 'cluster_id': 'test', 'sql_statements': 'select 1;', 'boto_session': None}
+DEBUG:redshift_query:Received Credentials
+DEBUG:redshift_query:Connected
+DEBUG:redshift_query:Running select 1
+INFO:redshift_query:Statement "?column?
+--------
+       1
+(1 row)" result:
+```
 
 Credits
 -------
