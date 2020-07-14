@@ -1,10 +1,10 @@
 # redshift-query
 
-![image](https://img.shields.io/pypi/v/redshift-query.svg%0A%20%20%20%20%20:target:%20https://pypi.python.org/pypi/redshift-query)
+[![image](https://img.shields.io/pypi/v/redshift-query.svg)](https://pypi.python.org/pypi/redshift-query)
 
-![image](https://img.shields.io/travis/helecloud/redshift-query.svg%0A%20%20%20%20%20:target:%20https://travis-ci.com/helecloud/redshift-query)
+[![image](https://img.shields.io/travis/helecloud/redshift-query.svg)](https://travis-ci.com/helecloud/redshift-query)
 
-![image](https://readthedocs.org/projects/redshift-query/badge/?version=latest%0A%20%20%20%20%20:target:%20https://redshift-query.readthedocs.io/en/latest/?badge=latest%0A%20%20%20%20%20:alt:%20Documentation%20Status)
+[![image](https://readthedocs.org/projects/redshift-query/badge/?version=latest)](https://redshift-query.readthedocs.io/en/latest/?badge=latest)
 
 
 ## Introduction
