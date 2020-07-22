@@ -2,6 +2,6 @@
 
 __author__ = """Farid Nouri Neshat"""
 __email__ = 'faridn@helecloud.com'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 from .redshift_query import set_config, query
