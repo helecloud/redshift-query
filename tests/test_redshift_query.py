@@ -8,7 +8,7 @@ import boto3
 import botocore.session
 import pg
 from botocore.stub import Stubber
-from redshift_query import redshift_query
+import redshift_query
 import logging
 
 logging.basicConfig()
