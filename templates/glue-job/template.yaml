@@ -1,0 +1,415 @@
+# MIT License
+# 
+# Copyright (c) 2020 Helecloud
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Provisions a glue job that can run queries on Redshift. This gets credentials of a cluster via redshift.GetClusterCredentials
+  API call and then makes a connection to the cluster and runs the provided SQL statements, once done it will close the
+  connection and return the results.
+
+  You can optionally give it a schedule and it will run based on the schedule, otherwise you have to trigger it via a Lambda, API gateway or another Glue Job
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: redshift-query-glue-job
+    Description: |-
+      Provisions a glue job that can run queries on Redshift. This gets
+      credentials of a cluster via redshift.GetClusterCredentials
+      API call and then runs the provided SQL statements. You can optionally
+      provide a schedule for it to run.
+    Author: Farid Nouri Neshat
+    SpdxLicenseId: MIT
+    LicenseUrl: https://redshift-query.s3-eu-west-1.amazonaws.com/glue-job/$VERSION/LICENSE
+    ReadmeUrl: https://redshift-query.s3-eu-west-1.amazonaws.com/glue-job/$VERSION/README.md
+    Labels: ['redshift', 'glue', 'query', 'cron']
+    HomePageUrl: https://github.com/helecloud/redshift-query
+    SemanticVersion: $VERSION
+    SourceCodeUrl: https://github.com/helecloud/redshift-query
+
+Parameters:
+  ClusterId:
+    Type: String
+    Default: '*'
+    Description: -|
+      The cluster ID. Can be overriden via the --cluster-id job argument. If provided, the ClusterHost, DBName,
+      DBUser, AvailabilityZone, SubnetId parameters will be inferred from it.
+    MinLength: 1
+  ClusterHost:
+    Type: String
+    Default: ''
+    Description: The cluster host. If not provided it'll be inferred from ClusterId. Can be overriden via the --cluster-host job argument on runtime.
+  DBName:
+    Type: String
+    Default: ''
+    Description: The database name. If not provided it'll be inferred from ClusterId. Can be overriden via the  --db-name job argument.
+  DBUser:
+    Type: String
+    Default: ''
+    Description: The database user. If not provided it'll be inferred from ClusterId. Can be overriden via the --db-user job argument.
+  SQLStatements:
+    Type: String
+    Default: ''
+    Description: |-
+      The sql statements to execute. Can be overriden via the --sql-statements job argument.
+      This is also formatted via the job arguments. See here For example: https://github.com/helecloud/redshift-query
+  AvailabilityZone:
+    Type: String
+    Default: ''
+    Description: AvailabilityZone that the job can be launched into. Should be the same one the Redshift Cluster is in. If not provided it'll be inferred from ClusterId.
+  SubnetId:
+    Type: String
+    Default: ''
+    Description: Subnet that the job can be launched into. Should have connectivity to the Redshift Cluster is in. If not provided it'll be inferred from ClusterId.
+  SecurityGroupId:
+    Type: String
+    Default: ''
+    Description: |-
+      Group that the job can be attached to. To allow AWS Glue components to communicate and also prevent access from
+      other networks, the security group must specify a self-referencing inbound rule for all TCP ports. If not provided
+      a security group will be created.
+  Schedule:
+    Type: String
+    Default: ''
+    Description: |-
+      If provided it will run the job based on the scheduled, otherwise you have to trigger the job in some other way.
+      It should be a cron expression that can be understood by AWS Glue:
+      https://docs.aws.amazon.com/glue/latest/dg/monitor-data-warehouse-schedule.html
+  MaxConcurrentRuns:
+    Type: Number
+    Default: 1
+    Description: |-
+      The maximum number of concurrent runs allowed for the job. The default is 1.
+      An error is returned when this threshold is reached. The maximum value you can specify is controlled by a service limit.
+  MaxRetries:
+    Type: Number
+    Default: 5
+    Description: The maximum number of times to retry this job after a JobRun fails. The default is 5.
+  Timeout:
+    Type: Number
+    Default: 2880
+    Description: |-
+      The job timeout in minutes. This is the maximum time that a job run can consume resources before it is terminated
+      and enters TIMEOUT status. The default is 2,880 minutes (48 hours).
+  Loglevel:
+    Type: String
+    Default: ERROR
+    AllowedValues:
+      - ERROR
+      - DEBUG
+      - INFO
+    Description: |-
+      The job log level. If set at ERROR, only erros are logged. If set at INFO, the query results are logged.
+      If set at DEBUG it will log every action that happens. You will find all the logs in `/aws-glue/python-jobs/error`
+  FailureSNSTopicARN:
+    Type: String
+    Default: create
+    Description: |-
+      SNS Topic to pushlish in case of a failure. IF set as 'create' an SNS topic will be created.
+      If set as empty then there will be no alerting.
+
+Conditions:
+  ScheduleProvided: !Not [!Equals [!Ref Schedule, '']]
+  SecurityGroupNotProvided: !Equals [!Ref SecurityGroupId, '']
+  SNSTopicNotProvided: !Equals [!Ref FailureSNSTopicARN, 'create']
+  Alerting: !Not [!Equals [!Ref FailureSNSTopicARN, '']]
+
+Resources:
+  ParametersLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 30
+      InlineCode: |-
+        import boto3
+        import cfnresponse
+        import logging
+
+        logging.basicConfig()
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+
+        def handler(event, context):
+            try:
+                rs = boto3.client('redshift')
+                if event['RequestType'] == 'Delete':
+                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'Delete complete'})
+                    return
+                props = event['ResourceProperties']
+                cluster = rs.describe_clusters(ClusterIdentifier=props['ClusterId'])["Clusters"][0]
+                if 'SubnetId' in props and props['SubnetId']:
+                    subnet_id = props['SubnetId']
+                    availability_zone = props.get('AvailabilityZone') or cluster["AvailabilityZone"]
+                else:
+                    availability_zone = cluster["AvailabilityZone"]
+                    subnet_group_name = cluster["ClusterSubnetGroupName"]
+                    subnet_group = rs.describe_cluster_subnet_groups(ClusterSubnetGroupName=subnet_group_name)["ClusterSubnetGroups"][0]
+                    for subnet in subnet_group["Subnets"]:
+                        if availability_zone == subnet["SubnetAvailabilityZone"]["Name"]:
+                            subnet_id = subnet["SubnetIdentifier"]
+                            break
+
+                data = {
+                    'ClusterHost': props.get('ClusterHost') or cluster['Endpoint']['Address'],
+                    'ClusterPort': props.get('ClusterPort') or cluster['Endpoint']['Port'],
+                    'AvailabilityZone': availability_zone,
+                    'SubnetId': subnet_id,
+                    'VPCId': cluster['VpcId'],
+                    'DBUser': props.get('DBUser') or cluster['MasterUsername'],
+                    'DBName': props.get('DBName') or cluster['DBName'],
+                }
+
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+            except Exception as e:
+                logger.error(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'Failed'})
+      Handler: index.handler
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - redshift:DescribeClusters
+                - redshift:DescribeClusterSubnetGroups
+              Resource: '*'
+      Runtime: python3.7
+
+  DefaultParameters:
+    Type: Custom::DefaultParameters
+    Properties:
+      ServiceToken: !GetAtt [ParametersLambda, Arn]
+      ClusterId: !Ref ClusterId
+      ClusterHost: !Ref ClusterHost
+      AvailabilityZone: !Ref AvailabilityZone
+      SubnetId: !Ref SubnetId
+      DBUser: !Ref DBUser
+      DBName: !Ref DBName
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "glue.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        -
+          PolicyName: "AllowRedshiftGetCredentials"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "redshift:GetClusterCredentials"
+                Resource:
+                  - !Sub 'arn:aws:redshift:${AWS::Region}:${AWS::AccountId}:dbuser:${ClusterId}/${DefaultParameters.DBUser}'
+                  - !Sub 'arn:aws:redshift:${AWS::Region}:${AWS::AccountId}:dbname:${ClusterId}/${DefaultParameters.DBName}'
+              - Effect: 'Allow'
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:/aws-glue/*"
+              - Effect: 'Allow'
+                Action: "s3:GetObject"
+                Resource: "arn:aws:s3:::redshift-query/*"
+              - Effect: 'Allow'
+                Action: "glue:GetConnection"
+                Resource:
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:connection/${Connection}"
+              - Effect: 'Allow'
+                Action:
+                  - "ec2:DescribeVpcEndpoints"
+                  - "ec2:DescribeRouteTables"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DeleteNetworkInterface"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DescribeSecurityGroups"
+                  - "ec2:DescribeSubnets"
+                  - "ec2:DescribeVpcAttribute"
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - "ec2:CreateTags"
+                  - "ec2:DeleteTags"
+                Condition:
+                  'ForAllValues:StringEquals':
+                    'aws:TagKeys': "aws-glue-service-resource"
+                Resource:
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
+
+
+  SecurityGroup:
+    Condition: SecurityGroupNotProvided
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "Glue Job ${AWS::StackName}"
+      VpcId: !GetAtt [DefaultParameters, VPCId]
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: '-1'
+          CidrIpv6: ::/0
+
+  SecurityGroupIngress:
+    Condition: SecurityGroupNotProvided
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !Ref SecurityGroup
+
+  Trigger:
+    Condition: ScheduleProvided
+    Type: AWS::Glue::Trigger
+    Properties:
+      Type: SCHEDULED
+      Description: DESCRIPTION_SCHEDULED
+      Schedule: !Ref Schedule
+      Actions:
+        - JobName: !Ref Job
+      Name: !Ref AWS::StackName
+
+  Connection:
+    Type: AWS::Glue::Connection
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      ConnectionInput:
+        Name: !Ref ClusterId
+        ConnectionProperties:
+          JDBC_CONNECTION_URL: 'jdbc:redshift://dummy:9999/dummy'
+          USERNAME: 'dummy'
+          PASSWORD: 'dummy'
+        ConnectionType: JDBC
+        Description: This connection resource is simply created to signal AWS to launch the glue job in the right subnet!
+        PhysicalConnectionRequirements:
+          AvailabilityZone: !GetAtt DefaultParameters.AvailabilityZone
+          SubnetId: !GetAtt DefaultParameters.SubnetId
+          SecurityGroupIdList: [!If [SecurityGroupNotProvided, !Ref SecurityGroup, !Ref SecurityGroupId]]
+
+  Job:
+    Type: AWS::Glue::Job
+    Properties:
+      Command:
+        Name: pythonshell
+        ScriptLocation: "s3://redshift-query/glue-job/$VERSION/wrapper.py"
+        PythonVersion: '3'
+      DefaultArguments:
+        "--db_name": !GetAtt DefaultParameters.DBName
+        "--db_user": !GetAtt DefaultParameters.DBUser
+        "--cluster_id": !Ref ClusterId
+        "--cluster_host": !GetAtt DefaultParameters.ClusterHost
+        "--sql_statements": !Ref SQLStatements
+        "--log_level": !Ref Loglevel
+        "--extra-py-files": "s3://redshift-query/redshift_query-$VERSION-py3-none-any.whl"
+      Description: !Sub |
+        This job runs the following query on ${ClusterId} as part of ${AWS::StackName} Cloudformation Stack:
+        ${SQLStatements}
+      Connections:
+        Connections: [!Ref Connection]
+      ExecutionProperty:
+        MaxConcurrentRuns: !Ref MaxConcurrentRuns
+      GlueVersion: '1.0'
+      MaxRetries: !Ref MaxRetries
+      Name: !Ref AWS::StackName
+      Role: !Ref Role
+      Timeout: !Ref Timeout
+
+  JobFailEvent:
+    Condition: Alerting
+    Type: AWS::Events::Rule
+    Properties:
+      Description: This rule is to detect if the Glue Jobs fails
+      EventPattern:
+        source: [aws.glue]
+        detail-type: [Glue Job State Change]
+        detail:
+          jobName: [!Ref Job]
+          state: [FAILED]
+      Name: !Sub ${AWS::StackName}-fail-event
+      State: ENABLED
+      Targets:
+        - Arn: !If [SNSTopicNotProvided, !Ref AlarmTopic, !Ref FailureSNSTopicARN]
+          "Id": "SNS-ID"
+
+  AlarmTopic:
+    Condition: SNSTopicNotProvided
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-failure-alarms-topic
+      DisplayName: !Sub ${AWS::StackName}-failure-alarms-topic
+
+  AlarmTopicPolicy:
+    Condition: SNSTopicNotProvided
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: CloudWatchEvents
+        Statement:
+          - Sid: EventsToSNS
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: SNS:Publish
+            Resource: !Ref AlarmTopic
+          - Sid: DefaultSNS
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - SNS:GetTopicAttributes
+              - SNS:DeleteTopic
+              - SNS:Subscribe
+              - SNS:ListSubscriptionsByTopic
+              - SNS:Receive
+            Resource: !Ref AlarmTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner: !Ref "AWS::AccountId"
+      Topics:
+        - !Ref AlarmTopic
+Outputs:
+  Job:
+    Value: !Ref Job
+    Export:
+      Name: !Sub "${AWS::StackName}:Job"
+  SecurityGroup:
+    Value: !Ref SecurityGroup
+    Condition: SecurityGroupNotProvided
+    Export:
+      Name: !Sub "${AWS::StackName}:SecurityGroup"
+  SNSTopic:
+    Value: !Ref AlarmTopic
+    Condition: SNSTopicNotProvided
+    Export:
+      Name: !Sub "${AWS::StackName}:SNSTopic"

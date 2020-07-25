@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: clean clean-test clean-pyc clean-build docs help deploy-templates deploy-to-s3 deploy-whl-to-s3 publish-sam
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -22,6 +22,8 @@ endef
 export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
+
+VERSION := git describe --tags | cut -c2-
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
@@ -83,3 +85,20 @@ dist: clean ## builds source and wheel package
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
+
+templates/glue-job/dist:
+	mkdir -p templates/glue-job/dist
+	cp LICENSE templates/glue-job/wrapper.py templates/glue-job/dist
+	sed "s/\$$VERSION/`$(VERSION)`/g" templates/glue-job/template.yaml > templates/glue-job/dist/template.yaml
+	cd templates/glue-job/dist/ && cfn-docs template.yaml > README.md
+
+deploy-templates: templates/glue-job/dist
+	aws s3 sync templates/glue-job/dist s3://redshift-query/glue-job/`$(VERSION)`
+
+deploy-whl-to-s3: dist
+	aws s3 cp dist/*.whl s3://redshift-query/
+
+deploy-to-s3: deploy-whl-to-s3 deploy-templates
+
+publish-sam: deploy-templates
+	sam publish --region eu-west-1d --template-file templates/glue-job/dist/template.yaml

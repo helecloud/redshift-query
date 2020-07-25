@@ -31,6 +31,11 @@ for when you have a Lambda and it is called by an event source(S3 for example).
 - REDSHIFT_QUERY_LOG_LEVEL: By default set to ERROR, which logs nothing. Normally errors are not logged and bubbled up instead so they crash the script.
 If set to INFO, it will log the result of queries and if set to DEBUG it will log every thing that happens which is good for debugging why it is stuck.
 
+
+### Deploying it via a glue job
+
+You can use the [redshift-query-glue-job](https://console.aws.amazon.com/lambda/home?region=eu-west-1#/create/app?applicationId=arn:aws:serverlessrepo:eu-west-1:708984232979:applications/redshift-query-glue-job0) application from AWS Serverless Application Repository.
+
 ### Deploying via AWS SAM & Lambda
 
 Here's an example that copies to a table when new manifests in S3 are written:

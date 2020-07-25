@@ -1,17 +1,26 @@
 language: python
-python:
-- 3.8
-- 3.7
-- 3.6
-install: pip install -U tox-travis
-script: tox
-deploy:
-  provider: pypi
-  distributions: sdist bdist_wheel
-  user: "__token__"
-  password:
-    secure: jqTsbzsYg/T7j1cjIiu+9d+t6Tckd0kI+EQaDjCQoxfYPemQJKGb7jxs9SLvffyaHIqva7BAAFu8UIUCsypBNz6cADLogcNDhK9PZ5oGPD3YfwA+kMejDwyvlAL+J7L8uGGNER71XRS0v65cRZCFaYH1Y1ZfNTRiKe1m7RSkjcC/dtYX0vSMUwf3zXxtm0A3BJe+s0wvK7AAosvzEM4V+ducDebQaVJfeD3cYHUYprrOEAPvWYzezMtqg7wTl4CzhntpqRlHKlkdLPP5sV9EmLGQEht16mYyuM6tLsuWuJIhyUiACglFNgx508zJ4NHPV1UBhz6qV2veSuB0fQmzqO6cxrpr42/FLQUivYJx7QWEak3ObCzF6X9JJ8Iu7a0lf5a+DwhwbCpSLTBVoamepV5O8/3L344Si1YhoeRVRuiL0Sag2HnjzMIeqXmw5Fobo1QvKiFUxqHp2KOWjwYrQVPJxa18+JwZBICOLVM7LXTtszzZd6RaTId7Lo9ROKC0yoUr9AS9TQ3d/oZEtIgp6b4Q+C2uDMnkGPOZxbFu0r3Uld791PEEKjGC+V4+PPJm+/2YYvCTqvZfxV1GrA+B4VUSXFWkxCqeCHIpojQtNzQndaaUXZAMHUnGMqEb43mjQ1ODR0xN+RGAmlBoZ+r2GEXGcBxEUgLPsbIddJ3jRD4=
-  on:
-    tags: true
-    repo: helecloud/redshift-query
-    python: 3.8
+
+jobs:
+  include:
+    - stage: test
+      install: pip install -U tox-travis
+      python:
+        - 3.8
+        - 3.7
+        - 3.6
+      script: tox
+    - stage: deploy
+      deploy:
+        - provider: pypi
+          distributions: sdist bdist_wheel
+          user: "__token__"
+          password:
+            secure: jqTsbzsYg/T7j1cjIiu+9d+t6Tckd0kI+EQaDjCQoxfYPemQJKGb7jxs9SLvffyaHIqva7BAAFu8UIUCsypBNz6cADLogcNDhK9PZ5oGPD3YfwA+kMejDwyvlAL+J7L8uGGNER71XRS0v65cRZCFaYH1Y1ZfNTRiKe1m7RSkjcC/dtYX0vSMUwf3zXxtm0A3BJe+s0wvK7AAosvzEM4V+ducDebQaVJfeD3cYHUYprrOEAPvWYzezMtqg7wTl4CzhntpqRlHKlkdLPP5sV9EmLGQEht16mYyuM6tLsuWuJIhyUiACglFNgx508zJ4NHPV1UBhz6qV2veSuB0fQmzqO6cxrpr42/FLQUivYJx7QWEak3ObCzF6X9JJ8Iu7a0lf5a+DwhwbCpSLTBVoamepV5O8/3L344Si1YhoeRVRuiL0Sag2HnjzMIeqXmw5Fobo1QvKiFUxqHp2KOWjwYrQVPJxa18+JwZBICOLVM7LXTtszzZd6RaTId7Lo9ROKC0yoUr9AS9TQ3d/oZEtIgp6b4Q+C2uDMnkGPOZxbFu0r3Uld791PEEKjGC+V4+PPJm+/2YYvCTqvZfxV1GrA+B4VUSXFWkxCqeCHIpojQtNzQndaaUXZAMHUnGMqEb43mjQ1ODR0xN+RGAmlBoZ+r2GEXGcBxEUgLPsbIddJ3jRD4=
+          on:
+            tags: true
+            repo: helecloud/redshift-query
+            python: 3.8
+
+after_deploy:
+  - pip install cloudformation-docs awscli
+  - make publish-sam
