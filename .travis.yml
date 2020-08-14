@@ -21,6 +21,6 @@ jobs:
             repo: helecloud/redshift-query
             python: 3.8
 
-after_deploy:
-  - pip install cloudformation-docs awscli
-  - make publish-sam
+          after_deploy:
+            - pip install cloudformation-docs awscli
+            - make publish-sam
