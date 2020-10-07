@@ -34,7 +34,7 @@ If set to INFO, it will log the result of queries and if set to DEBUG it will lo
 
 ### Deploying it via a glue job
 
-You can use the [redshift-query-glue-job](https://console.aws.amazon.com/lambda/home?region=eu-west-1#/create/app?applicationId=arn:aws:serverlessrepo:eu-west-1:708984232979:applications/redshift-query-glue-job0) application from AWS Serverless Application Repository.
+You can use the [redshift-query-glue-job](https://serverlessrepo.aws.amazon.com/applications/eu-west-1/708984232979/redshift-query-glue-job) application from AWS Serverless Application Repository.
 
 ### Deploying via AWS SAM & Lambda
 
