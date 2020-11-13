@@ -1,0 +1,12 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+setuptools = {editable = true, file = "file:///Users/farid/repos/redshift_query_templates/test-env"}
+
+[requires]
+python_version = "3.8"
