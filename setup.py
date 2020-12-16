@@ -9,7 +9,7 @@ with open('README.md') as readme_file:
 
 requirements = [
     'pygresql~=5.2',
-    'boto3~=1.14.17'
+    'boto3~=1.16.37'
 ]
 
 setup_requirements = [ ]
